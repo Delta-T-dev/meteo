@@ -117,11 +117,19 @@ def run_tool(name: str, inputs: dict) -> str:
     return json.dumps(result, ensure_ascii=False)
 
 
-def run_agent(user_message: str):
+def run_agent(user_message: str, on_event=None):
+    def emit(event: dict):
+        if on_event:
+            on_event(event)
+
     print(f"\nUser: {user_message}\n")
     messages = [{"role": "user", "content": user_message}]
+    iteration = 0
 
     while True:
+        iteration += 1
+        emit({"type": "iteration", "number": iteration})
+
         response = client.messages.create(
             model="claude-opus-4-8",
             max_tokens=4096,
@@ -132,18 +140,28 @@ def run_agent(user_message: str):
 
         messages.append({"role": "assistant", "content": response.content})
 
+        for block in response.content:
+            if block.type == "thinking" and getattr(block, "thinking", None):
+                print(f"[Thinking] {block.thinking[:200]}...")
+                emit({"type": "thinking", "content": block.thinking})
+
         if response.stop_reason != "tool_use":
+            final_text = ""
             for block in response.content:
                 if hasattr(block, "text"):
-                    print(f"Agent: {block.text}")
+                    final_text += block.text
+            print(f"Agent: {final_text}")
+            emit({"type": "final", "content": final_text})
             break
 
         tool_results = []
         for block in response.content:
             if block.type == "tool_use":
                 print(f"[Tool] {block.name}({json.dumps(block.input, ensure_ascii=False)})")
+                emit({"type": "tool_call", "name": block.name, "input": block.input})
                 output = run_tool(block.name, block.input)
                 print(f"[Result] {output}\n")
+                emit({"type": "tool_result", "name": block.name, "result": output})
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,

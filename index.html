@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent IA — Visualisation en direct</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #FAFAF7;
+    --surface: #FFFFFF;
+    --border: #E8E8E2;
+    --text: #1A1A18;
+    --muted: #6B6B65;
+    --thinking: #7F77DD;
+    --tool-call: #378ADD;
+    --tool-result: #1D9E75;
+    --final: #BA7517;
+    --error: #E24B4A;
+    --iteration: #9B9B94;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 1.15rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  #stats {
+    display: flex;
+    gap: 20px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  #stats span { display: flex; align-items: center; gap: 5px; }
+  #stats strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  main {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 36px 24px 80px;
+  }
+
+  .input-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-bottom: 36px;
+  }
+
+  textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 72px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--tool-call); }
+
+  .input-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+
+  button {
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  button:hover:not(:disabled) { opacity: 0.85; }
+  button:active:not(:disabled) { transform: scale(0.98); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Timeline */
+  #timeline { display: flex; flex-direction: column; gap: 0; }
+
+  .iteration-sep {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--iteration);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 24px 0 14px;
+    opacity: 0;
+    animation: fadeSlide 0.4s ease-out forwards;
+  }
+  .iteration-sep::before, .iteration-sep::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--border);
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    opacity: 0;
+    animation: fadeSlide 0.4s ease-out forwards;
+  }
+
+  .card.thinking  { border-left-color: var(--thinking); }
+  .card.tool-call { border-left-color: var(--tool-call); }
+  .card.tool-result { border-left-color: var(--tool-result); }
+  .card.final     { border-left-color: var(--final); background: #FFFDF5; }
+  .card.error     { border-left-color: var(--error); background: #FFF5F5; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .card-icon { font-size: 1.1rem; line-height: 1; }
+
+  .card-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .card.thinking  .card-title { color: var(--thinking); }
+  .card.tool-call .card-title { color: var(--tool-call); }
+  .card.tool-result .card-title { color: var(--tool-result); }
+  .card.final     .card-title { color: var(--final); }
+  .card.error     .card-title { color: var(--error); }
+
+  .card-body {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .card.final .card-body {
+    font-size: 0.95rem;
+  }
+
+  pre.json {
+    background: #F3F3EE;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    overflow-x: auto;
+    white-space: pre;
+    font-family: "SF Mono", ui-monospace, monospace;
+    color: #3A3A36;
+  }
+
+  .truncated { position: relative; }
+  .see-more {
+    background: none;
+    border: none;
+    color: var(--tool-result);
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 4px 0 0;
+    font-weight: 600;
+    text-decoration: underline;
+    display: inline-block;
+  }
+
+  /* Pulsing dots */
+  .thinking-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    padding: 12px 4px;
+    opacity: 0;
+    animation: fadeSlide 0.3s ease-out forwards;
+  }
+  .thinking-indicator.hidden { display: none; }
+
+  .dots { display: flex; gap: 4px; }
+  .dots span {
+    width: 6px; height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🤖 Agent IA — Visualisation en direct</h1>
+  <div id="stats">
+    <span>⏱ <strong id="elapsed">0s</strong></span>
+    <span>🔁 <strong id="iter-count">0</strong> itération(s)</span>
+  </div>
+</header>
+
+<main>
+  <div class="input-area">
+    <textarea id="objective" placeholder="Ex : Compare la météo à Paris et Tokyo, calcule la différence et sauvegarde un rapport." rows="3"></textarea>
+    <div class="input-row">
+      <button id="run-btn" onclick="launch()">Lancer l'agent ▶</button>
+    </div>
+  </div>
+
+  <div id="timeline"></div>
+  <div id="thinking-indicator" class="thinking-indicator hidden">
+    <div class="dots"><span></span><span></span><span></span></div>
+    L'agent réfléchit…
+  </div>
+</main>
+
+<script>
+  let timerInterval = null;
+  let startTime = null;
+  let iterCount = 0;
+
+  function startTimer() {
+    startTime = Date.now();
+    iterCount = 0;
+    document.getElementById('iter-count').textContent = '0';
+    timerInterval = setInterval(() => {
+      const s = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('elapsed').textContent = s + 's';
+    }, 500);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function showThinking(show) {
+    const el = document.getElementById('thinking-indicator');
+    el.classList.toggle('hidden', !show);
+    if (show) scrollToBottom();
+  }
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      const indicator = document.getElementById('thinking-indicator');
+      indicator.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  function addIterationSep(n) {
+    const el = document.createElement('div');
+    el.className = 'iteration-sep';
+    el.textContent = `Itération ${n}`;
+    document.getElementById('timeline').appendChild(el);
+    scrollToBottom();
+  }
+
+  function addCard(type, icon, title, bodyHtml) {
+    showThinking(false);
+    const card = document.createElement('div');
+    card.className = `card ${type}`;
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-icon">${icon}</span>
+        <span class="card-title">${title}</span>
+      </div>
+      <div class="card-body">${bodyHtml}</div>
+    `;
+    document.getElementById('timeline').insertBefore(
+      card,
+      document.getElementById('thinking-indicator')
+    );
+    scrollToBottom();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function truncated(text, max = 300) {
+    if (text.length <= max) return escHtml(text);
+    const short = escHtml(text.slice(0, max));
+    const full  = escHtml(text);
+    const id = 'tr' + Math.random().toString(36).slice(2);
+    return `<span class="truncated">
+      <span id="${id}-short">${short}<span style="color:var(--muted)">…</span></span>
+      <span id="${id}-full" style="display:none">${full}</span>
+      <br><button class="see-more" onclick="
+        document.getElementById('${id}-short').style.display='none';
+        document.getElementById('${id}-full').style.display='';
+        this.style.display='none';
+      ">voir plus ▾</button>
+    </span>`;
+  }
+
+  function handleEvent(ev) {
+    switch (ev.type) {
+      case 'iteration':
+        iterCount++;
+        document.getElementById('iter-count').textContent = iterCount;
+        addIterationSep(ev.number);
+        showThinking(true);
+        break;
+
+      case 'thinking':
+        addCard('thinking', '🧠', 'Raisonnement',
+          `<div>${truncated(ev.content, 600)}</div>`);
+        showThinking(true);
+        break;
+
+      case 'tool_call':
+        addCard('tool-call', '🔧', `Appel — ${escHtml(ev.name)}`,
+          `<pre class="json">${escHtml(JSON.stringify(ev.input, null, 2))}</pre>`);
+        showThinking(true);
+        break;
+
+      case 'tool_result':
+        let parsed;
+        try { parsed = JSON.parse(ev.result); } catch { parsed = ev.result; }
+        const pretty = typeof parsed === 'object'
+          ? JSON.stringify(parsed, null, 2)
+          : String(parsed);
+        addCard('tool-result', '📥', `Résultat — ${escHtml(ev.name)}`,
+          `<pre class="json">${truncated(pretty, 300)}</pre>`);
+        showThinking(true);
+        break;
+
+      case 'final':
+        showThinking(false);
+        addCard('final', '✨', 'Réponse finale',
+          `<div>${escHtml(ev.content)}</div>`);
+        break;
+
+      case 'error':
+        showThinking(false);
+        addCard('error', '⚠️', 'Erreur',
+          `<div>${escHtml(ev.message)}</div>`);
+        break;
+    }
+  }
+
+  async function launch() {
+    const objective = document.getElementById('objective').value.trim();
+    if (!objective) return;
+
+    document.getElementById('run-btn').disabled = true;
+    document.getElementById('elapsed').textContent = '0s';
+    document.getElementById('timeline').innerHTML = '';
+    showThinking(false);
+    startTimer();
+
+    try {
+      const res = await fetch('/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ objective })
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              handleEvent(JSON.parse(line.slice(6)));
+            } catch {}
+          }
+        }
+      }
+    } catch (e) {
+      addCard('error', '⚠️', 'Erreur réseau', escHtml(String(e)));
+    } finally {
+      stopTimer();
+      showThinking(false);
+      document.getElementById('run-btn').disabled = false;
+    }
+  }
+
+  document.getElementById('objective').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) launch();
+  });
+</script>
+</body>
+</html>

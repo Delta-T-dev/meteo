@@ -1,0 +1,4 @@
+anthropic
+requests
+fastapi
+uvicorn[standard]
