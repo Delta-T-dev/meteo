@@ -1,0 +1,27 @@
+WEATHER COMPARISON REPORT
+Paris vs. Tokyo
+========================================
+
+PARIS, FRANCE
+- Temperature:  18.4 °C
+- Humidity:     72%
+- Wind Speed:   14.2 km/h
+- Condition:    Partly cloudy
+
+TOKYO, JAPAN
+- Temperature:  29.1 °C
+- Humidity:     85%
+- Wind Speed:   8.7 km/h
+- Condition:    Humid and sunny
+
+----------------------------------------
+TEMPERATURE DIFFERENCE
+----------------------------------------
+Tokyo is 10.7 °C warmer than Paris.
+
+SUMMARY
+Tokyo is significantly warmer and more humid than Paris,
+with hot, sunny conditions and a 13-percentage-point higher
+humidity level. However, Paris has notably stronger winds
+(14.2 km/h vs. 8.7 km/h). Overall, Paris offers milder,
+more comfortable weather, while Tokyo is hot and muggy.
