@@ -148,7 +148,10 @@ def run_agent(user_message: str):
 
 
 if __name__ == "__main__":
-    run_agent(
-        "Compare the current weather in Paris and Tokyo. "
-        "Calculate the temperature difference, then save a summary report to 'weather_comparison.txt'."
-    )
+    print("🤖 Agent météo prêt. Tape ta demande (ou 'quitter' pour sortir).\n")
+    while True:
+        objectif = input("Toi > ")
+        if objectif.lower() in ("quitter", "exit", "q"):
+            break
+        run_agent(objectif)
+        print()
