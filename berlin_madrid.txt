@@ -1,0 +1,24 @@
+RAPPORT MÉTÉO COMPARATIF — BERLIN vs MADRID
+=============================================
+
+BERLIN (Allemagne)
+- Température    : 21,3 °C
+- Humidité      : 60 %
+- Vent          : 18,5 km/h
+- Conditions    : Plutôt ensoleillé
+
+MADRID (Espagne)
+- Température    : 34,7 °C
+- Humidité      : 28 %
+- Vent          : 11,0 km/h
+- Conditions    : Chaud et sec
+
+COMPARAISON
+- Différence de température : 13,4 °C (Madrid plus chaude)
+- Différence d'humidité     : 32 points (Berlin plus humide)
+- Différence de vent        : 7,5 km/h (Berlin plus venteux)
+
+CONCLUSION
+Madrid est nettement plus chaude et plus sèche que Berlin, avec un écart
+de température de 13,4 °C. Berlin présente un climat plus doux, plus humide
+et plus venteux.

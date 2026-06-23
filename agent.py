@@ -47,6 +47,12 @@ tools = [
 MOCK_WEATHER = {
     "paris": {"city": "Paris", "country": "France", "temperature_c": 18.4, "humidity_pct": 72, "wind_speed_kmh": 14.2, "condition": "Partly cloudy"},
     "tokyo": {"city": "Tokyo", "country": "Japan", "temperature_c": 29.1, "humidity_pct": 85, "wind_speed_kmh": 8.7, "condition": "Humid and sunny"},
+    "berlin": {"city": "Berlin", "country": "Germany", "temperature_c": 21.3, "humidity_pct": 60, "wind_speed_kmh": 18.5, "condition": "Mostly sunny"},
+    "madrid": {"city": "Madrid", "country": "Spain", "temperature_c": 34.7, "humidity_pct": 28, "wind_speed_kmh": 11.0, "condition": "Hot and dry"},
+    "london": {"city": "London", "country": "United Kingdom", "temperature_c": 16.2, "humidity_pct": 78, "wind_speed_kmh": 22.0, "condition": "Overcast"},
+    "new york": {"city": "New York", "country": "United States", "temperature_c": 26.5, "humidity_pct": 65, "wind_speed_kmh": 16.3, "condition": "Partly cloudy"},
+    "sydney": {"city": "Sydney", "country": "Australia", "temperature_c": 14.8, "humidity_pct": 68, "wind_speed_kmh": 20.1, "condition": "Cloudy"},
+    "dubai": {"city": "Dubai", "country": "UAE", "temperature_c": 41.2, "humidity_pct": 45, "wind_speed_kmh": 13.5, "condition": "Sunny and very hot"},
 }
 
 def get_weather(city: str) -> dict:
